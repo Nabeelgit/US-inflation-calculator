@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bidirectional U.S. Inflation Calculator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .calculator {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            font-size: 1.5em;
+            margin-top: 0;
+        }
+        label {
+            display: block;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .calculator {
+                padding: 15px;
+            }
+            h1 {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>Bidirectional U.S. Inflation Calculator</h1>
+        <label for="amount-today">Amount in today's dollars:</label>
+        <input type="number" id="amount-today" placeholder="Enter today's amount">
+        
+        <label for="amount-past">Amount in past dollars:</label>
+        <input type="number" id="amount-past" placeholder="Enter past amount">
+        
+        <label for="year">Select year:</label>
+        <select id="year"></select>
+    </div>
+
+    <script>
+        // Real U.S. inflation data (CPI, 1913-2023, base year 2023)
+        const inflationData = {
+            2023: 1.000000, 2022: 0.920455, 2021: 0.868433, 2020: 0.854545,
+            2019: 0.839205, 2018: 0.820455, 2017: 0.803409, 2016: 0.793182,
+            2015: 0.791477, 2014: 0.778409, 2013: 0.766477, 2012: 0.751136,
+            2011: 0.728409, 2010: 0.716477, 2009: 0.714773, 2008: 0.701136,
+            2007: 0.681818, 2006: 0.660227, 2005: 0.638636, 2004: 0.622159,
+            2003: 0.608523, 2002: 0.598295, 2001: 0.585227, 2000: 0.566477,
+            1999: 0.553409, 1998: 0.544318, 1997: 0.537500, 1996: 0.522159,
+            1995: 0.508523, 1994: 0.495455, 1993: 0.481818, 1992: 0.467045,
+            1991: 0.448295, 1990: 0.425568, 1989: 0.406818, 1988: 0.390909,
+            1987: 0.377273, 1986: 0.370455, 1985: 0.358523, 1984: 0.343750,
+            1983: 0.332955, 1982: 0.313068, 1981: 0.284091, 1980: 0.250000,
+            1979: 0.224432, 1978: 0.208523, 1977: 0.195455, 1976: 0.184659,
+            1975: 0.169886, 1974: 0.154545, 1973: 0.145455, 1972: 0.133523,
+            1971: 0.128409, 1970: 0.121591, 1969: 0.115909, 1968: 0.111364,
+            1967: 0.107955, 1966: 0.104545, 1965: 0.102841, 1964: 0.101136,
+            1963: 0.100000, 1962: 0.098864, 1961: 0.097727, 1960: 0.096591,
+            1959: 0.095455, 1958: 0.094318, 1957: 0.093182, 1956: 0.090909,
+            1955: 0.090909, 1954: 0.090909, 1953: 0.090909, 1952: 0.089773,
+            1951: 0.087500, 1950: 0.085227, 1949: 0.085227, 1948: 0.086364,
+            1947: 0.079545, 1946: 0.073864, 1945: 0.068182, 1944: 0.066477,
+            1943: 0.064773, 1942: 0.059091, 1941: 0.053409, 1940: 0.051136,
+            1939: 0.050000, 1938: 0.051136, 1937: 0.051136, 1936: 0.050000,
+            1935: 0.048864, 1934: 0.047727, 1933: 0.045455, 1932: 0.045455,
+            1931: 0.050000, 1930: 0.052273, 1929: 0.053409, 1928: 0.053409,
+            1927: 0.054545, 1926: 0.055682, 1925: 0.054545, 1924: 0.053409,
+            1923: 0.053409, 1922: 0.052273, 1921: 0.053409, 1920: 0.060227,
+            1919: 0.054545, 1918: 0.047727, 1917: 0.040909, 1916: 0.035227,
+            1915: 0.032955, 1914: 0.032955, 1913: 0.032955
+        };
+
+        // Function to get inflation rate for any year between 1913 and 2023
+        function getInflationRate(year) {
+            year = Math.max(1913, Math.min(2023, year));
+            return inflationData[year] || null;
+        }
+
+        const amountTodayInput = document.getElementById('amount-today');
+        const amountPastInput = document.getElementById('amount-past');
+        const yearSelect = document.getElementById('year');
+
+        let lastModifiedInput = 'today'; // Keep track of which input was last modified
+
+        function calculateInflation(source) {
+            const year = parseInt(yearSelect.value);
+            if (!year) return;
+
+            const inflationRate = getInflationRate(year);
+            if (inflationRate === null) return;
+
+            if (source === 'today' || (source === 'year' && lastModifiedInput === 'today')) {
+                if (amountTodayInput.value) {
+                    const amountToday = parseFloat(amountTodayInput.value);
+                    const pastValue = amountToday * inflationRate;
+                    amountPastInput.value = pastValue.toFixed(2);
+                }
+            } else if (source === 'past' || (source === 'year' && lastModifiedInput === 'past')) {
+                if (amountPastInput.value) {
+                    const amountPast = parseFloat(amountPastInput.value);
+                    const todayValue = amountPast / inflationRate;
+                    amountTodayInput.value = todayValue.toFixed(2);
+                }
+            }
+        }
+
+        amountTodayInput.addEventListener('input', () => {
+            lastModifiedInput = 'today';
+            calculateInflation('today');
+        });
+
+        amountPastInput.addEventListener('input', () => {
+            lastModifiedInput = 'past';
+            calculateInflation('past');
+        });
+
+        yearSelect.addEventListener('change', () => calculateInflation('year'));
+
+        // Populate the year dropdown
+        for (let year = 2023; year >= 1913; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+    </script>
+</body>
+</html>
